@@ -268,7 +268,7 @@ ob_start();
   <section class="cover">
     <div class="badge">Building Export</div>
     <h1 class="cover__title"><?php echo htmlspecialchars($buildingName, ENT_QUOTES, 'UTF-8'); ?></h1>
-    <div class="cover__subtitle">Room-by-room punch list</div>
+    <div class="cover__subtitle">Room-by-room project log</div>
     <div class="cover__meta">
       <div><span><?php echo (int)count($rooms); ?></span> rooms</div>
       <div><span><?php echo (int)$roomsWithTasks; ?></span> rooms with tasks</div>

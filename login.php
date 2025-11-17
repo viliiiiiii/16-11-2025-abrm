@@ -137,7 +137,7 @@ include __DIR__ . '/includes/header.php';
 
 <div class="auth-wrapper">
   <form method="post" class="card auth-card" action="/login.php<?php echo $next ? ('?next=' . urlencode($next)) : ''; ?>" novalidate>
-    <h1>Punch List Login</h1>
+    <h1>ABRM Management Login</h1>
     <p class="auth-sub">Sign in to continue.</p>
 
     <?php if ($error): ?>

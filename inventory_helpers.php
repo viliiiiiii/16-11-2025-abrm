@@ -690,7 +690,7 @@ function inventory_generate_signed_transfer_pdf(PDO $pdo, int $movementId, array
     $html .= '</div>';
     $html .= '</div>';
 
-    $html .= '<div class="notes">Digitally signed via Punchlist inventory workflow. Both parties acknowledge the transfer of the listed items.</div>';
+    $html .= '<div class="notes">Digitally signed via the ABRM Management inventory workflow. Both parties acknowledge the transfer of the listed items.</div>';
 
     $html .= '</body></html>';
 

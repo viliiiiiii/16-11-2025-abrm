@@ -66,6 +66,39 @@ if (is_post()) {
                 $error = 'Failed to update template sharing.';
             }
         }
+    } elseif (isset($_POST['archive_note']) || isset($_POST['restore_note'])) {
+        $noteId = (int)($_POST['note_id'] ?? 0);
+        $note   = notes_fetch($noteId);
+        if (!$note || !notes_can_edit($note)) {
+            $error = 'You cannot change that note.';
+        } else {
+            $targetStatus = isset($_POST['archive_note']) ? 'archived' : NOTES_DEFAULT_STATUS;
+            try {
+                notes_set_status($noteId, $targetStatus);
+                $payload = [
+                    'ok' => true,
+                    'note_id' => $noteId,
+                    'status' => $targetStatus,
+                ];
+            } catch (Throwable $e) {
+                error_log('notes: status change failed: ' . $e->getMessage());
+                $error = 'Failed to update note status.';
+            }
+        }
+    } elseif (isset($_POST['delete_note'])) {
+        $noteId = (int)($_POST['note_id'] ?? 0);
+        $note   = notes_fetch($noteId);
+        if (!$note || !notes_can_edit($note)) {
+            $error = 'You cannot delete that note.';
+        } else {
+            try {
+                notes_delete($noteId);
+                $payload = ['ok' => true, 'deleted' => $noteId];
+            } catch (Throwable $e) {
+                error_log('notes: delete failed: ' . $e->getMessage());
+                $error = 'Failed to remove the note.';
+            }
+        }
     } elseif (isset($_POST['quick_note'])) {
         $title    = trim((string)($_POST['title'] ?? ''));
         $noteDate = trim((string)($_POST['note_date'] ?? date('Y-m-d')));
@@ -128,6 +161,14 @@ if (is_post()) {
 }
 
 $notes      = notes_list_for_user($meId);
+$notesArchived = array_values(array_filter($notes, static function (array $noteRow): bool {
+    return notes_status_is_archived($noteRow['meta']['status'] ?? null);
+}));
+$notesActive = array_values(array_filter($notes, static function (array $noteRow): bool {
+    return !notes_status_is_archived($noteRow['meta']['status'] ?? null);
+}));
+$viewMode = ($_GET['view'] ?? 'active') === 'archived' ? 'archived' : 'active';
+$notesForView = $viewMode === 'archived' ? $notesArchived : $notesActive;
 $templates  = notes_fetch_templates_for_user($meId);
 $ownedTpls  = array_filter($templates, static fn($tpl) => !empty($tpl['is_owner']));
 $sharedTpls = array_filter($templates, static fn($tpl) => empty($tpl['is_owner']));
@@ -342,6 +383,38 @@ $today     = date('Y-m-d');
             align-items: center;
             gap: 16px;
         }
+        .notes-header__actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .notes-header__stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--notes-muted);
+            font-size: 0.85rem;
+        }
+        .notes-view-toggle {
+            display: inline-flex;
+            background: rgba(15,23,42,0.05);
+            border: 1px solid var(--notes-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .notes-view-toggle .button {
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            color: var(--notes-muted);
+            padding: 8px 16px;
+        }
+        .notes-view-toggle .button.is-active {
+            background: var(--notes-accent);
+            color: #fff;
+        }
         .notes-header__title {
             display: flex;
             flex-direction: column;
@@ -455,6 +528,14 @@ $today     = date('Y-m-d');
         .note-card__footer-actions {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .note-card__inline-form {
+            margin: 0;
+        }
+        .note-card__inline-form button {
+            padding: 8px 12px;
         }
         .note-card__shares {
             display: flex;
@@ -679,26 +760,44 @@ $today     = date('Y-m-d');
         <header class="notes-header">
             <div class="notes-header__title">
                 <h1>Workspace</h1>
-                <span><?= count($notes) ?> notes, <?= count($templates) ?> templates</span>
+                <div class="notes-header__stats">
+                    <span><?= count($notesActive) ?> active · <?= count($notesArchived) ?> archived</span>
+                    <span><?= count($templates) ?> templates</span>
+                </div>
             </div>
-            <div class="search-box">
-                <input type="search" id="notes-search" placeholder="Search notes" autocomplete="off">
+            <div class="notes-header__actions">
+                <div class="notes-view-toggle">
+                    <a class="button<?= $viewMode === 'active' ? ' is-active' : '' ?>" href="?view=active">Active</a>
+                    <a class="button<?= $viewMode === 'archived' ? ' is-active' : '' ?>" href="?view=archived">Archived</a>
+                </div>
+                <div class="search-box">
+                    <input type="search" id="notes-search" placeholder="Search notes" autocomplete="off">
+                </div>
             </div>
         </header>
 
         <?php flash_message(); ?>
 
         <section class="notes-grid" id="notes-grid">
-            <?php if (!$notes): ?>
-                <div class="note-card__empty">No notes yet. Capture your first one!</div>
+            <?php if (!$notesForView): ?>
+                <div class="note-card__empty">
+                    <?php if ($viewMode === 'archived'): ?>
+                        No archived notes yet.
+                    <?php elseif (count($notesArchived) > 0): ?>
+                        Everything current is archived. Restore a note to bring it back into play.
+                    <?php else: ?>
+                        No notes yet. Capture your first one!
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
-                <?php foreach ($notes as $note):
+                <?php foreach ($notesForView as $note):
                     $noteId     = (int)$note['id'];
                     $titlePlain = $note['title'] !== '' ? (string)$note['title'] : 'Untitled note';
                     $title      = htmlspecialchars($titlePlain, ENT_QUOTES, 'UTF-8');
                     $dataTitlePlain = function_exists('mb_strtolower') ? mb_strtolower($titlePlain, 'UTF-8') : strtolower($titlePlain);
                     $dataTitle = htmlspecialchars($dataTitlePlain, ENT_QUOTES, 'UTF-8');
-                    $status   = htmlspecialchars(notes_status_label($note['meta']['status'] ?? null), ENT_QUOTES, 'UTF-8');
+                    $rawStatus = $note['meta']['status'] ?? null;
+                    $status   = htmlspecialchars(notes_status_label($rawStatus), ENT_QUOTES, 'UTF-8');
                     $priority = htmlspecialchars((string)($note['meta']['properties']['priority'] ?? ''), ENT_QUOTES, 'UTF-8');
                     $noteDate = htmlspecialchars((string)($note['note_date'] ?? ''), ENT_QUOTES, 'UTF-8');
                     $owner    = htmlspecialchars($note['owner_label'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -715,6 +814,7 @@ $today     = date('Y-m-d');
                     $noteRecord = ['id' => $noteId, 'user_id' => (int)$note['owner_id']];
                     $canEdit  = notes_can_edit($noteRecord);
                     $canShare = notes_can_share($noteRecord);
+                    $isArchived = notes_status_is_archived($rawStatus);
                     ?>
                     <article class="note-card" data-note-id="<?= $noteId ?>" data-note-title="<?= $dataTitle ?>">
                         <div class="note-card__head">
@@ -755,6 +855,20 @@ $today     = date('Y-m-d');
                                 <a class="button button--subtle" href="view.php?id=<?= $noteId ?>">Open</a>
                                 <?php if ($canEdit): ?>
                                     <a class="button button--subtle" href="edit.php?id=<?= $noteId ?>">Edit</a>
+                                    <form class="note-card__inline-form" method="post">
+                                        <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="note_id" value="<?= $noteId ?>">
+                                        <?php if ($isArchived): ?>
+                                            <button class="button button--ghost" type="submit" name="restore_note" value="1">Restore</button>
+                                        <?php else: ?>
+                                            <button class="button button--ghost" type="submit" name="archive_note" value="1">Archive</button>
+                                        <?php endif; ?>
+                                    </form>
+                                    <form class="note-card__inline-form" method="post" onsubmit="return confirm('Delete this note permanently?');">
+                                        <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="note_id" value="<?= $noteId ?>">
+                                        <button class="button button--ghost button--danger" type="submit" name="delete_note" value="1">Delete</button>
+                                    </form>
                                 <?php endif; ?>
                                 <?php if ($canShare): ?>
                                     <button class="button button--ghost" data-modal-open="note-share" data-share-config="<?= $shareConfig ?>">Share</button>
@@ -775,7 +889,7 @@ $today     = date('Y-m-d');
         </div>
         <form class="quick-note-form" method="post">
             <div class="modal__body">
-                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= $csrfToken ?>">
+                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="quick_note" value="1">
                 <div class="field">
                     <label for="quick-title">Title</label>
@@ -817,7 +931,7 @@ $today     = date('Y-m-d');
         </div>
         <form class="share-form" method="post" data-share-form="note">
             <div class="modal__body">
-                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= $csrfToken ?>">
+                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="update_note_shares" value="1">
                 <input type="hidden" name="note_id" value="">
                 <div class="field">
@@ -852,7 +966,7 @@ $today     = date('Y-m-d');
         </div>
         <form class="share-form" method="post" data-share-form="template">
             <div class="modal__body">
-                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= $csrfToken ?>">
+                <input type="hidden" name="<?= CSRF_TOKEN_NAME ?>" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="update_template_shares" value="1">
                 <input type="hidden" name="template_id" value="">
                 <div class="field">

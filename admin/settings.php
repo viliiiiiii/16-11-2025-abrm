@@ -10,7 +10,7 @@ $ok     = null;
 // Whitelist of editable settings (key => [type, label, placeholder, help])
 $FIELDS = [
   // Branding
-  'app.title'        => ['string','App Title',        'Punchlist Pro', 'Shown in navbar & titles'],
+  'app.title'        => ['string','App Title',        'ABRM Management', 'Shown in navbar & titles'],
   'brand.theme'      => ['string','Theme Color (hex)', '#0ea5e9',      'Used for PWA/theme-color'],
   // Behavior
   'ui.default_view'  => ['string','Default Tasks View','table',        'table | cards | sticky'],

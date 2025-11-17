@@ -107,7 +107,7 @@ function profile_sync_shadow_email(int $userId, string $email, string $sourceSch
         } catch (Throwable $e) {
         }
     }
-    if ($sourceSchema !== 'punchlist') {
+    if ($sourceSchema !== 'abrm') {
         try {
             $apps = get_pdo();
             $stmt = $apps->prepare('UPDATE `users` SET `email` = ? WHERE `id` = ?');
@@ -127,7 +127,7 @@ function profile_sync_shadow_password(int $userId, string $hash, string $sourceS
         } catch (Throwable $e) {
         }
     }
-    if ($sourceSchema !== 'punchlist') {
+    if ($sourceSchema !== 'abrm') {
         try {
             $apps = get_pdo();
             $stmt = $apps->prepare('UPDATE `users` SET `password_hash` = ? WHERE `id` = ?');

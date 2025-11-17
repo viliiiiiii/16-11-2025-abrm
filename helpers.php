@@ -24,7 +24,7 @@ if (!defined('HELPERS_BOOTSTRAPPED')) {
     define('HELPERS_BOOTSTRAPPED', true);
 
     /**
-     * Return a PDO connection to either the application DB ("apps" = punchlist)
+     * Return a PDO connection to either the application DB ("apps" = abrm)
      * or the core governance DB ("core" = users/roles/activity).
      */
     function get_pdo(string $which = 'apps'): PDO {
@@ -229,7 +229,7 @@ if (!defined('HELPERS_BOOTSTRAPPED')) {
         return match ($s) { 'open'=>'status-open','in_progress'=>'status-inprogress','done'=>'status-done', default=>'status-open' };
     }
 
-    /* ===== App (punchlist) queries — use APPS DB ===== */
+    /* ===== App (ABRM) queries — use APPS DB ===== */
 
     function fetch_buildings(): array {
         $stmt = get_pdo()->query('SELECT id,name FROM buildings ORDER BY name');

@@ -5,7 +5,7 @@ require_once __DIR__ . '/helpers.php';
 
 /**
  * Attempt login using CORE users first (core_db.users).
- * Falls back to legacy punchlist.users (apps DB) once, and auto-seeds CORE.
+ * Falls back to legacy ABRM users (apps DB) once, and auto-seeds CORE.
  */
 function attempt_login(string $email, string $password): bool {
     $email = trim($email);
