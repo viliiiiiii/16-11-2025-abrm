@@ -91,33 +91,26 @@ For alternative storage backends (Ceph, OpenIO, etc.), adjust the endpoint and p
 - Users manage per-channel and per-type preferences from `/account/profile.php#notification-preferences`, and the navigation bell dropdown links there.
 - Browsers register a push subscription via the service worker (`/service-worker.js`); the manifest (`/manifest.webmanifest`) enables installable PWA behaviour.
 
-## Python notification service
+## Push notification flow
 
-- A FastAPI microservice lives under `notifications_service/`. Install its dependencies (`pip install -r notifications_service/requirements.txt`) and run it with `uvicorn notifications_service.main:app --reload --port 8001`.
-- Configure `NOTIFICATIONS_SERVICE_URL`, `NOTIFICATIONS_VAPID_PUBLIC_KEY`, `NOTIFICATIONS_VAPID_PRIVATE_KEY`, and `NOTIFICATIONS_VAPID_EMAIL` via environment variables or `config.php`.
-- PHP helpers in `includes/notification_service.php` forward toast and push events to the microservice, while the new `/service-worker.js` displays received pushes.
+The browser talks directly to PHP, so you no longer need to run a separate Python process.
 
-### End-to-end setup checklist
+### Step-by-step checklist (matches the YouTube tutorial)
 
-1. **Prepare Python environment**
-   - `cd notifications_service`
-   - `python3 -m venv .venv && source .venv/bin/activate`
-   - `pip install -r requirements.txt`
-2. **Start the FastAPI worker**
-   - `uvicorn notifications_service.main:app --host 0.0.0.0 --port 8001`
-   - The bundled SQLite database (`notifications_service/notifications.db`) and tables are created automatically.
-3. **Expose the service to PHP**
-   - Ensure `NOTIFICATIONS_SERVICE_URL` in `config.php` points to the running FastAPI instance (default `http://127.0.0.1:8001`).
-   - Keep the existing VAPID keys in `config.php`; the service reads them via environment variables or `config.php` constants when proxied through PHP.
-4. **Serve the PHP app over HTTPS** so the browser can register service workers and push subscriptions.
-5. **Verify browser registration**
-   - Load any authenticated page so `/assets/js/notifications.js` can register the service worker (`/service-worker.js`).
-   - Approve the notification permission prompt; the script sends the resulting Push API subscription JSON to `/save_subscription.php`.
-6. **Confirm persistence**
-   - `save_subscription.php` stores the authenticated `user_id` in the PHP session (matching `SESSION_NAME`) and forwards the subscription to the Python API (`/api/notifications/register-subscription`).
-   - Check `notifications_service/notifications.db` with `sqlite3` to view rows in `push_subscriptions` or tail `logs/notifications.log` if the PHP proxy reports transport errors.
-7. **Send a test push**
-   - Call `POST /api/notifications/push` with `{ "user_id": <id>, "title": "Hello", "body": "Test" }` via curl or the provided helper in `includes/notification_service.php` (`notify_push`).
-   - The service worker displays the payload to the browser that registered the subscription.
+1. **Generate VAPID keys once**
+   - `php scripts/generate_vapid.php`
+   - Copy the public & private key plus subject into `config.php` (`WEB_PUSH_VAPID_*`). Do **not** delete your existing keys if they already work; the new code keeps them intact.
+2. **Serve the app over HTTPS** so service workers and Push API registration succeed.
+3. **Register a browser**
+   - Sign in and open any page so `/assets/js/notifications.js` registers `/service-worker.js`.
+   - Accept the permission prompt; the resulting subscription JSON is sent to `/save_subscription.php` where it is stored in `notification_devices` (MySQL) together with your user id.
+   - The profile page (`/account/profile.php`) uses `/notifications/push_subscribe.php` to show device status, revoke browsers, or disable push entirely.
+4. **Verify storage**
+   - Run `SELECT * FROM notification_devices WHERE user_id = ?` to confirm the endpoint, `p256dh`, and `auth` keys were persisted.
+5. **Queue notifications**
+   - Use `notify_users([...])` anywhere in PHP to emit a notification. It lands in the `notifications` table and automatically enqueues a push delivery job when the recipient allows push for that type.
+6. **Send pushes like the video demo**
+   - Execute `php scripts/notifications_worker.php` (or run it via cron/systemd) to flush the push queue with the bundled `Minishlink\WebPush` library.
+   - Successful deliveries appear instantly via the service worker, matching the workflow shown in the linked tutorial.
 
-These steps keep your existing VAPID keys intact while ensuring every saved subscription is tied to the correct authenticated user.
+The entire pipeline now runs inside PHP/MySQL, so deployment is as simple as uploading the code, keeping your VAPID keys, and running the worker periodically.
