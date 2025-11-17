@@ -18,38 +18,6 @@ if (($_GET['action'] ?? '') === 'connect') {
     $userId  = (int)($me['id'] ?? 0);
     if ($userId <= 0) { http_response_code(401); exit; }
 
-    // Upsert this browser as a "web" device
-    if (!function_exists('notif_touch_web_device')) {
-        function notif_touch_web_device(int $userId, string $userAgent): void {
-            $pdo = notif_pdo();
-            $ua   = substr($userAgent, 0, 255);
-
-            $sessionId = session_id();
-            if ($sessionId === '' || $sessionId === false) {
-                $sessionId = $_COOKIE['PHPSESSID'] ?? bin2hex(random_bytes(8));
-            }
-
-            $fingerprint = implode('|', [
-                (string)$userId,
-                (string)$sessionId,
-                substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45),
-                $ua,
-            ]);
-            $endpoint = 'internal-webpush://' . sha1($fingerprint);
-
-            $sql = "INSERT INTO notification_devices (user_id, kind, endpoint, user_agent, created_at, last_used_at)"
-                 . " VALUES (:u, 'webpush', :ep, :ua, NOW(), NOW())"
-                 . " ON DUPLICATE KEY UPDATE last_used_at = NOW(), user_agent = VALUES(user_agent), endpoint = VALUES(endpoint)";
-
-            try {
-                $pdo->prepare($sql)->execute([':u' => $userId, ':ep' => $endpoint, ':ua' => $ua]);
-            } catch (Throwable $e) {
-                try {
-                    error_log('notif_touch_web_device failed: ' . $e->getMessage());
-                } catch (Throwable $_) {}
-            }
-        }
-    }
     notif_touch_web_device($userId, (string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
 
     $pdo = notif_pdo();
@@ -63,20 +31,21 @@ if (($_GET['action'] ?? '') === 'connect') {
     };
 
     // Prefs check (allow_web + mute_until)
-    $shouldDeliver = function(int $userId, string $type) use ($pdo): bool {
+    $shouldDeliver = function(int $userId, string $type): bool {
         try {
-            $st = $pdo->prepare("SELECT allow_web, mute_until
-                                 FROM notification_type_prefs
-                                 WHERE user_id = :u AND notif_type = :t LIMIT 1");
-            $st->execute([':u'=>$userId, ':t'=>$type]);
-            $row = $st->fetch(PDO::FETCH_ASSOC);
-            if (!$row) return true; // default allow
-            if (empty($row['allow_web'])) return false;
-            if (!empty($row['mute_until']) && strtotime((string)$row['mute_until']) > time()) return false;
-            return true;
+            $pref = notif_get_type_pref($userId, $type);
         } catch (Throwable $e) {
-            return true; // fail-open
+            return true;
         }
+
+        if (empty($pref['allow_web'])) {
+            return false;
+        }
+        if (!empty($pref['mute_until']) && strtotime((string)$pref['mute_until']) > time()) {
+            return false;
+        }
+
+        return true;
     };
 
     $columnMap = notif_notifications_column_map();
