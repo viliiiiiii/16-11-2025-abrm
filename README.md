@@ -103,14 +103,14 @@ The browser talks directly to PHP, so you no longer need to run a separate Pytho
 2. **Serve the app over HTTPS** so service workers and Push API registration succeed.
 3. **Register a browser**
    - Sign in and open any page so `/assets/js/notifications.js` registers `/service-worker.js`.
-   - Accept the permission prompt; the resulting subscription JSON is sent to `/save_subscription.php` where it is stored in `notification_devices` (MySQL) together with your user id.
+   - Accept the permission prompt; the resulting subscription JSON is sent to `/save_subscription.php` where it is stored in `push_subscriptions` (MySQL) together with your user id.
    - The profile page (`/account/profile.php`) uses `/notifications/push_subscribe.php` to show device status, revoke browsers, or disable push entirely.
 4. **Verify storage**
-   - Run `SELECT * FROM notification_devices WHERE user_id = ?` to confirm the endpoint, `p256dh`, and `auth` keys were persisted.
+   - Run `SELECT * FROM push_subscriptions WHERE user_id = ?` to confirm the endpoint, `p256dh`, and `auth` keys were persisted.
 5. **Queue notifications**
-   - Use `notify_users([...])` anywhere in PHP to emit a notification. It lands in the `notifications` table and automatically enqueues a push delivery job when the recipient allows push for that type.
+   - Use `notify_users([...])` anywhere in PHP to emit a notification. It lands in the `notifications` table and immediately fires a push to every recipient that allows that type.
 6. **Send pushes like the video demo**
-   - Execute `php scripts/notifications_worker.php` (or run it via cron/systemd) to flush the push queue with the bundled `Minishlink\WebPush` library.
+   - Execute `php scripts/notifications_worker.php "Title" "Body" "/optional/url"` to broadcast a push message to every stored subscription using the bundled `Minishlink\\WebPush` library.
    - Successful deliveries appear instantly via the service worker, matching the workflow shown in the linked tutorial.
 
 The entire pipeline now runs inside PHP/MySQL, so deployment is as simple as uploading the code, keeping your VAPID keys, and running the worker periodically.

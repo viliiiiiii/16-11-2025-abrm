@@ -1005,17 +1005,10 @@ if (is_post()) {
                 if ($deviceId <= 0) {
                     $errors[] = 'Device not found.';
                 } else {
-                    try {
-                        $pdoNotif = notif_pdo();
-                        $stmt = $pdoNotif->prepare('DELETE FROM notification_devices WHERE id = :id AND user_id = :uid');
-                        $stmt->execute([':id' => $deviceId, ':uid' => $notificationUserId]);
-                        if ($stmt->rowCount() > 0) {
-                            redirect_with_message('/account/profile.php', 'Device disconnected.', 'success');
-                        } else {
-                            $errors[] = 'Device not found or already removed.';
-                        }
-                    } catch (Throwable $e) {
-                        $errors[] = 'Could not remove the device.';
+                    if (notif_delete_push_subscription($notificationUserId, $deviceId)) {
+                        redirect_with_message('/account/profile.php', 'Device disconnected.', 'success');
+                    } else {
+                        $errors[] = 'Device not found or already removed.';
                     }
                 }
             }

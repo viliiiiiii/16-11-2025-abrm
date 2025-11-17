@@ -40,8 +40,6 @@ if (!$localUserId) {
     $respond(['ok' => false, 'error' => 'profile_unavailable'], 409);
 }
 
-notif_ensure_device_schema();
-
 $raw = file_get_contents('php://input');
 $data = [];
 if ($raw !== '' && stripos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
@@ -67,23 +65,22 @@ try {
 
     if ($intent === 'unsubscribe') {
         $endpoint = trim((string)($input['endpoint'] ?? ''));
-        $pdo = notif_pdo();
         if ($endpoint !== '') {
-            $stmt = $pdo->prepare('DELETE FROM notification_devices WHERE user_id = :uid AND endpoint = :ep');
-            $stmt->execute([':uid' => $localUserId, ':ep' => $endpoint]);
+            notif_delete_push_subscription($localUserId, null, $endpoint);
         }
         $respond($statusPayload());
     }
 
     if ($intent === 'disable') {
-        $pdo = notif_pdo();
         $endpoint = trim((string)($input['endpoint'] ?? ''));
         if ($endpoint !== '') {
-            $stmt = $pdo->prepare('DELETE FROM notification_devices WHERE user_id = :uid AND endpoint = :ep');
-            $stmt->execute([':uid' => $localUserId, ':ep' => $endpoint]);
+            notif_delete_push_subscription($localUserId, null, $endpoint);
         }
-        $stmt = $pdo->prepare("DELETE FROM notification_devices WHERE user_id = :uid AND kind = 'webpush'");
-        $stmt->execute([':uid' => $localUserId]);
+        $pdo = notif_pdo();
+        try {
+            $pdo->prepare('DELETE FROM push_subscriptions WHERE user_id = :uid')->execute([':uid' => $localUserId]);
+        } catch (Throwable $e) {
+        }
         notif_set_global_preferences($localUserId, ['allow_push' => false]);
         $respond($statusPayload());
     }
