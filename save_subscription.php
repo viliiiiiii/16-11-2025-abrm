@@ -2,7 +2,16 @@
 // save_subscription.php
 
 require_once __DIR__ . '/config.php'; // where NOTIFICATIONS_SERVICE_URL, etc. live
-session_start();
+
+// Match the session bootstrapping that the rest of the app uses so we can
+// actually read the authenticated user's id (otherwise PHP starts a new
+// session with the default name and $_SESSION is empty).
+if (session_status() === PHP_SESSION_NONE) {
+    if (defined('SESSION_NAME') && SESSION_NAME) {
+        session_name(SESSION_NAME);
+    }
+    session_start();
+}
 
 // Optional: get your logged-in user id from session
 $userId = isset($_SESSION['user_id']) ? (string)$_SESSION['user_id'] : null;

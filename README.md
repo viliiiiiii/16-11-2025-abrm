@@ -96,3 +96,28 @@ For alternative storage backends (Ceph, OpenIO, etc.), adjust the endpoint and p
 - A FastAPI microservice lives under `notifications_service/`. Install its dependencies (`pip install -r notifications_service/requirements.txt`) and run it with `uvicorn notifications_service.main:app --reload --port 8001`.
 - Configure `NOTIFICATIONS_SERVICE_URL`, `NOTIFICATIONS_VAPID_PUBLIC_KEY`, `NOTIFICATIONS_VAPID_PRIVATE_KEY`, and `NOTIFICATIONS_VAPID_EMAIL` via environment variables or `config.php`.
 - PHP helpers in `includes/notification_service.php` forward toast and push events to the microservice, while the new `/service-worker.js` displays received pushes.
+
+### End-to-end setup checklist
+
+1. **Prepare Python environment**
+   - `cd notifications_service`
+   - `python3 -m venv .venv && source .venv/bin/activate`
+   - `pip install -r requirements.txt`
+2. **Start the FastAPI worker**
+   - `uvicorn notifications_service.main:app --host 0.0.0.0 --port 8001`
+   - The bundled SQLite database (`notifications_service/notifications.db`) and tables are created automatically.
+3. **Expose the service to PHP**
+   - Ensure `NOTIFICATIONS_SERVICE_URL` in `config.php` points to the running FastAPI instance (default `http://127.0.0.1:8001`).
+   - Keep the existing VAPID keys in `config.php`; the service reads them via environment variables or `config.php` constants when proxied through PHP.
+4. **Serve the PHP app over HTTPS** so the browser can register service workers and push subscriptions.
+5. **Verify browser registration**
+   - Load any authenticated page so `/assets/js/notifications.js` can register the service worker (`/service-worker.js`).
+   - Approve the notification permission prompt; the script sends the resulting Push API subscription JSON to `/save_subscription.php`.
+6. **Confirm persistence**
+   - `save_subscription.php` stores the authenticated `user_id` in the PHP session (matching `SESSION_NAME`) and forwards the subscription to the Python API (`/api/notifications/register-subscription`).
+   - Check `notifications_service/notifications.db` with `sqlite3` to view rows in `push_subscriptions` or tail `logs/notifications.log` if the PHP proxy reports transport errors.
+7. **Send a test push**
+   - Call `POST /api/notifications/push` with `{ "user_id": <id>, "title": "Hello", "body": "Test" }` via curl or the provided helper in `includes/notification_service.php` (`notify_push`).
+   - The service worker displays the payload to the browser that registered the subscription.
+
+These steps keep your existing VAPID keys intact while ensuring every saved subscription is tied to the correct authenticated user.
