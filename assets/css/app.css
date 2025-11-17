@@ -315,6 +315,7 @@ body.viewer-open { overflow: hidden; }
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(15,23,42,.08);
 }
+.nav__bell-dot.is-visible { display: inline-flex; }
 
 .nav-user__profile-link { font-size: .85rem; color: var(--accent-strong); }
 
