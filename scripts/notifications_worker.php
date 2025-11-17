@@ -9,7 +9,7 @@ if (!notif_vapid_ready()) {
     exit(1);
 }
 
-$title = $argv[1] ?? 'Punch List update';
+$title = $argv[1] ?? 'ABRM Management update';
 $body  = $argv[2] ?? 'New activity is waiting for you.';
 $url   = $argv[3] ?? '/';
 

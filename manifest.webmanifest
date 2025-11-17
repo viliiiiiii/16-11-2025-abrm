@@ -1,11 +1,11 @@
 {
-  "name": "Field Ops Hub",
-  "short_name": "FieldOps",
+  "name": "ABRM Management",
+  "short_name": "ABRM",
   "start_url": "/index.php",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f9ff",
-  "theme_color": "#f6f9ff",
+  "background_color": "#0f111b",
+  "theme_color": "#0f111b",
   "icons": [
     {
       "src": "/assets/logo.png",

@@ -146,7 +146,7 @@ ob_start();
 <html>
 <head>
 <meta charset="utf-8">
-<title>Punch List (Public QR Photo Links)</title>
+<title>ABRM Management QR Links</title>
 <style>
   @page { size: A4; margin: 16mm 12mm 16mm 12mm; }
 
@@ -199,7 +199,7 @@ ob_start();
 </head>
 <body>
 
-<h1>Punch List Report</h1>
+<h1>ABRM Management Report</h1>
 <div class="meta">
   Generated: <?php echo htmlspecialchars(date('Y-m-d H:i'), ENT_QUOTES, 'UTF-8'); ?> •
   Total tasks: <?php echo (int)count($tasks); ?> •
@@ -308,7 +308,7 @@ if ($ret !== 0 || !file_exists($pdfFile)) {
 
 /* Stream inline */
 header('Content-Type: application/pdf');
-header('Content-Disposition: inline; filename="punch-list-qr-public.pdf"');
+header('Content-Disposition: inline; filename="abrm-qr-public.pdf"');
 header('Content-Length: ' . filesize($pdfFile));
 readfile($pdfFile);
 @unlink($pdfFile);

@@ -4,5 +4,7 @@
     <small class="text-muted">&copy; <?php echo date('Y'); ?> <?php echo sanitize(APP_TITLE); ?></small>
   </div>
 </footer>
+</div>
+</div>
 </body>
 </html>

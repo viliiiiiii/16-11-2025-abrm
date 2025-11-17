@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/inventory_helpers.php';
 require_login();
 
-$appsPdo = get_pdo();        // APPS (punchlist) DB
+$appsPdo = get_pdo();        // APPS (ABRM) DB
 $corePdo = get_pdo('core');  // CORE (users/roles/sectors/activity) DB — may be same as APPS if not split
 
 $canManage    = can('inventory_manage');

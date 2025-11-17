@@ -75,6 +75,10 @@ function notes_status_badge_class(?string $status): string {
     return $map[$status] ?? 'badge--indigo';
 }
 
+function notes_status_is_archived(?string $status): bool {
+    return notes_normalize_status($status) === 'archived';
+}
+
 function notes_random_tag_color(): string {
     $palette = ['#6366F1', '#0EA5E9', '#10B981', '#F59E0B', '#EC4899', '#F97316', '#14B8A6', '#A855F7', '#8B5CF6', '#EF4444'];
     return $palette[array_rand($palette)];
@@ -1060,6 +1064,12 @@ function notes_update(int $id, array $data): void {
     }
 }
 
+function notes_set_status(int $noteId, string $status): void {
+    $meta = notes_fetch_page_meta($noteId);
+    $meta['status'] = notes_normalize_status($status);
+    notes_save_page_meta($noteId, $meta);
+}
+
 function notes_delete(int $id): void {
     // delete photos and object storage, then note
     $photos = notes_fetch_photos($id);
@@ -1075,6 +1085,15 @@ function notes_delete(int $id): void {
     }
     if (notes__table_exists($pdo, 'notes_shares')) {
         $pdo->prepare("DELETE FROM notes_shares WHERE note_id=?")->execute([$id]);
+    }
+    if (notes__table_exists($pdo, 'note_pages_meta')) {
+        $pdo->prepare("DELETE FROM note_pages_meta WHERE note_id=?")->execute([$id]);
+    }
+    if (notes__table_exists($pdo, 'note_tag_assignments')) {
+        $pdo->prepare("DELETE FROM note_tag_assignments WHERE note_id=?")->execute([$id]);
+    }
+    if (notes__table_exists($pdo, 'note_blocks')) {
+        $pdo->prepare("DELETE FROM note_blocks WHERE note_id=?")->execute([$id]);
     }
     $pdo->prepare("DELETE FROM notes WHERE id=?")->execute([$id]);
 }

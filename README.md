@@ -1,6 +1,6 @@
-# Punch List Manager
+# ABRM Management
 
-A lightweight PHP 8.2+ punch list manager designed for LAMP stacks with S3-compatible storage.
+ABRM Management is a lightweight PHP 8.2+ operations manager designed for LAMP stacks with S3-compatible storage.
 
 ## Setup
 
@@ -32,7 +32,7 @@ The application assumes you run your own S3-compatible object storage (no third-
 
 3. **Start MinIO** (replace credentials with strong values):
    ```bash
-   MINIO_ROOT_USER=punchlist MINIO_ROOT_PASSWORD='change-me-strong' \
+   MINIO_ROOT_USER=abrm MINIO_ROOT_PASSWORD='change-me-strong' \
      minio server /srv/minio/data --console-address ":9090" --address ":9000"
    ```
    Run it as a systemd service for production. A minimal unit file:
@@ -44,7 +44,7 @@ The application assumes you run your own S3-compatible object storage (no third-
    [Service]
    User=minio
    Group=minio
-   Environment="MINIO_ROOT_USER=punchlist"
+   Environment="MINIO_ROOT_USER=abrm"
    Environment="MINIO_ROOT_PASSWORD=change-me-strong"
    ExecStart=/usr/local/bin/minio server /srv/minio/data --console-address :9090 --address :9000
    Restart=always
@@ -53,13 +53,13 @@ The application assumes you run your own S3-compatible object storage (no third-
    WantedBy=multi-user.target
    ```
 
-4. **Create a bucket** named `punchlist` via the MinIO console (`http://your-vps:9090`) or the `mc` CLI:
+4. **Create a bucket** named `abrm` via the MinIO console (`http://your-vps:9090`) or the `mc` CLI:
    ```bash
-   mc alias set local http://127.0.0.1:9000 punchlist change-me-strong
-   mc mb local/punchlist
+   mc alias set local http://127.0.0.1:9000 abrm change-me-strong
+   mc mb local/abrm
    ```
 
-5. **Generate access keys** dedicated to the web app. Inside the MinIO console, add a new user with `consoleAdmin` access or a custom policy that grants read/write to the `punchlist` bucket. Record the Access Key and Secret Key.
+5. **Generate access keys** dedicated to the web app. Inside the MinIO console, add a new user with `consoleAdmin` access or a custom policy that grants read/write to the `abrm` bucket. Record the Access Key and Secret Key.
 
 6. **Expose HTTPS**: put MinIO behind a reverse proxy such as Nginx or Caddy that terminates TLS. The app can connect to either HTTP or HTTPS endpoints, but HTTPS is strongly recommended.
 
@@ -68,7 +68,7 @@ The application assumes you run your own S3-compatible object storage (no third-
    define('S3_ENDPOINT', 'https://minio.example.com');
    define('S3_KEY', 'APP_ACCESS_KEY');
    define('S3_SECRET', 'APP_SECRET_KEY');
-   define('S3_BUCKET', 'punchlist');
+   define('S3_BUCKET', 'abrm');
    define('S3_REGION', 'us-east-1'); // MinIO accepts any region string
    define('S3_USE_PATH_STYLE', true); // required for MinIO unless using subdomain routing
    ```
