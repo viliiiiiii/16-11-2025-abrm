@@ -100,6 +100,7 @@ $breadcrumbs = build_breadcrumbs($path);
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?php echo bc_s($title); ?> - <?php echo bc_s(APP_TITLE); ?></title>
   <link rel="stylesheet" href="/assets/css/app.css?v=pro-1.1">
+  <link rel="stylesheet" href="/assets/css/toast.css?v=1">
   <link rel="icon" href="/assets/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f6f9ff">
@@ -108,6 +109,7 @@ $breadcrumbs = build_breadcrumbs($path);
     <meta name="vapid-public-key" content="<?php echo bc_s(WEB_PUSH_VAPID_PUBLIC_KEY); ?>">
   <?php endif; ?>
   <script type="module" src="/assets/js/app.js?v=pro-1.1" defer></script>
+  <script type="module" src="/assets/js/notifications.js?v=1" defer></script>
   <style>
     /* Lightweight breadcrumb styling (move to app.css later if you want) */
     .breadcrumbs { margin: 10px 0 14px; font-size: 13px; color: #475569; }
@@ -131,10 +133,21 @@ $breadcrumbs = build_breadcrumbs($path);
   data-notif-stream="/notifications/stream.php"
   data-notif-poll="/notifications/api.php?action=unread_count"
   data-auth="<?php echo $me ? '1' : '0'; ?>"
-  data-service-worker="/sw.js"
-  data-push-subscribe="/notifications/push_subscribe.php"
+  data-user-id="<?php echo $me ? (int)$me['id'] : ''; ?>"
+  data-service-worker="/service-worker.js"
+  data-push-endpoint="/save_subscription.php"
+  data-push-subscribe="/save_subscription.php"
   data-push-public-key="<?php echo bc_s(defined('WEB_PUSH_VAPID_PUBLIC_KEY') ? (WEB_PUSH_VAPID_PUBLIC_KEY ?? '') : ''); ?>"
+  data-vapid-key="<?php echo bc_s(defined('NOTIFICATIONS_VAPID_PUBLIC_KEY') ? (NOTIFICATIONS_VAPID_PUBLIC_KEY ?? '') : (defined('WEB_PUSH_VAPID_PUBLIC_KEY') ? (WEB_PUSH_VAPID_PUBLIC_KEY ?? '') : '')); ?>"
   data-csrf-name="<?php echo bc_s(CSRF_TOKEN_NAME); ?>">
+<?php
+  flash_message();
+  $sessionToasts = $_SESSION['toasts'] ?? [];
+  if ($sessionToasts) {
+      echo '<script>window.__SESSION_TOASTS = ' . json_encode($sessionToasts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ';</script>';
+      unset($_SESSION['toasts']);
+  }
+?>
 <header class="navbar">
   <div class="navbar__inner container">
     <a href="/index.php" class="brand" aria-label="<?php echo bc_s(APP_TITLE); ?>">
@@ -274,7 +287,7 @@ $breadcrumbs = build_breadcrumbs($path);
   </div>
 </div>
 
-<div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+<div id="toast-container" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
 <main class="container" id="app-main">
   <!-- Breadcrumbs -->
@@ -296,5 +309,3 @@ $breadcrumbs = build_breadcrumbs($path);
       </ol>
     </nav>
   <?php endif; ?>
-
-  <?php flash_message(); ?>

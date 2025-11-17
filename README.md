@@ -88,6 +88,11 @@ For alternative storage backends (Ceph, OpenIO, etc.), adjust the endpoint and p
 ## Web push & notification settings
 
 - Generate VAPID keys with `php scripts/generate_vapid.php` and copy the values into `config.php` (`WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY`, `WEB_PUSH_VAPID_SUBJECT`).
-- The notification worker (`php scripts/notifications_worker.php [batchSize]`) processes queued push jobs; run it via cron or a supervisor alongside any email worker you maintain.
 - Users manage per-channel and per-type preferences from `/account/profile.php#notification-preferences`, and the navigation bell dropdown links there.
-- Browsers register a push subscription via the service worker (`/sw.js`); the manifest (`/manifest.webmanifest`) enables installable PWA behaviour.
+- Browsers register a push subscription via the service worker (`/service-worker.js`); the manifest (`/manifest.webmanifest`) enables installable PWA behaviour.
+
+## Python notification service
+
+- A FastAPI microservice lives under `notifications_service/`. Install its dependencies (`pip install -r notifications_service/requirements.txt`) and run it with `uvicorn notifications_service.main:app --reload --port 8001`.
+- Configure `NOTIFICATIONS_SERVICE_URL`, `NOTIFICATIONS_VAPID_PUBLIC_KEY`, `NOTIFICATIONS_VAPID_PRIVATE_KEY`, and `NOTIFICATIONS_VAPID_EMAIL` via environment variables or `config.php`.
+- PHP helpers in `includes/notification_service.php` forward toast and push events to the microservice, while the new `/service-worker.js` displays received pushes.

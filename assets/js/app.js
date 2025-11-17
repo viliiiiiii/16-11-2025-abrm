@@ -1355,9 +1355,6 @@ function initCommandPalette() {
 
 onReady(() => {
   initNav();
-  initNotifications();
-  initPush();
-  initPushControls();
   initRooms();
   initCommandPalette();
 });

@@ -43,4 +43,9 @@ define('CORE_DB_PASS', 'core123');
 // Web Push / VAPID configuration
 define('WEB_PUSH_VAPID_PUBLIC_KEY', getenv('WEB_PUSH_VAPID_PUBLIC_KEY') ?: 'BFVtM-ytGJ4vahPj7suGZLSrPcmvke6XKfLNdgJa56dYJzGMIEMhF3Qklm9C8pE8CWascoY5tbxFPAMvkXwy5ds');
 define('WEB_PUSH_VAPID_PRIVATE_KEY', getenv('WEB_PUSH_VAPID_PRIVATE_KEY') ?: 'yKS9mCDDnnAjnyFv02dbDioGn2-TadEgslt79G9kkZg');
-define('WEB_PUSH_VAPID_SUBJECT', getenv('WEB_PUSH_VAPID_SUBJECT') ?: 'mailto:admin@example.com');
+define('WEB_PUSH_VAPID_SUBJECT', getenv('WEB_PUSH_VAPID_SUBJECT') ?: 'mailto:elvirisljamovic@gmail.com');
+
+define('NOTIFICATIONS_SERVICE_URL', getenv('NOTIFICATIONS_SERVICE_URL') ?: 'http://127.0.0.1:8001');
+define('NOTIFICATIONS_VAPID_PUBLIC_KEY', 'BLvqTrosQ1dKSxoS_4QPSQJMhhZTH6k0rrOBHh6gCm59VQJYcJyeeQpUIoJEM8EKp--c2ncaGhYoPWCm42y1uIs');
+define('NOTIFICATIONS_VAPID_PRIVATE_KEY', 'vq-VFxjwJbMmq58QpKTeabv91ATEg8-wEHXLKKHAlD0');
+define('NOTIFICATIONS_VAPID_SUBJECT',  'mailto:elvirisljamovic@gmail.com');
