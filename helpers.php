@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/includes/notification_service.php';
 
 date_default_timezone_set(APP_TIMEZONE);
 
@@ -17,6 +16,8 @@ $autoloadPath = __DIR__ . '/vendor/autoload.php';
 if (file_exists($autoloadPath)) {
     require_once $autoloadPath;
 }
+
+require_once __DIR__ . '/includes/notification_service.php';
 
 // Guard: only define functions once even if file is included multiple times.
 if (!defined('HELPERS_BOOTSTRAPPED')) {
@@ -852,12 +853,27 @@ function notify_users(array $userIds, string $type, string $title, string $body,
         return;
     }
 
+    require_once __DIR__ . '/includes/notifications.php';
+
+    $actor = current_user();
+    $actorId = $actor && !empty($actor['id']) ? (int)$actor['id'] : null;
     $link = $link !== null ? (string)$link : null;
-    $context = ['type' => $type, 'payload' => $payload, 'link' => $link];
 
     foreach ($recipients as $uid) {
-        notify_toast($uid, $title, 'info', array_merge($context, ['body' => $body]));
-        notify_push($uid, $title, $body, $link);
+        $localId = notif_resolve_local_user_id($uid);
+        if (!$localId) {
+            continue;
+        }
+
+        notif_emit([
+            'user_id'       => $localId,
+            'actor_user_id' => $actorId,
+            'type'          => $type,
+            'title'         => $title,
+            'body'          => $body,
+            'url'           => $link,
+            'data'          => $payload,
+        ]);
     }
 }
 

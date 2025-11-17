@@ -97,26 +97,10 @@ try {
         $respond(['ok' => false, 'error' => 'missing_subscription'], 422);
     }
 
-    $endpoint = trim((string)($subscription['endpoint'] ?? ''));
-    $keys = $subscription['keys'] ?? [];
-    $p256dh = trim((string)($keys['p256dh'] ?? ''));
-    $auth = trim((string)($keys['auth'] ?? ''));
-    if ($endpoint === '' || $p256dh === '' || $auth === '') {
+    $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+    if (!notif_save_push_subscription($localUserId, $subscription, $userAgent)) {
         $respond(['ok' => false, 'error' => 'invalid_subscription'], 422);
     }
-
-    $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
-    $pdo = notif_pdo();
-    $stmt = $pdo->prepare("INSERT INTO notification_devices (user_id, kind, endpoint, p256dh, auth, user_agent, created_at, last_used_at)
-                            VALUES (:uid, 'webpush', :endpoint, :p256dh, :auth, :ua, NOW(), NOW())
-                            ON DUPLICATE KEY UPDATE endpoint = VALUES(endpoint), p256dh = VALUES(p256dh), auth = VALUES(auth), user_agent = VALUES(user_agent), last_used_at = NOW()");
-    $stmt->execute([
-        ':uid'      => $localUserId,
-        ':endpoint' => $endpoint,
-        ':p256dh'   => $p256dh,
-        ':auth'     => $auth,
-        ':ua'       => $userAgent,
-    ]);
 
     notif_set_global_preferences($localUserId, ['allow_push' => true]);
 

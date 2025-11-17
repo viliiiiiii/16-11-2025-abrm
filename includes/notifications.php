@@ -1110,6 +1110,42 @@ function notif_fetch_push_subscriptions(int $userId): array {
     }));
 }
 
+function notif_save_push_subscription(int $userId, array $subscription, string $userAgent = ''): bool {
+    $endpoint = trim((string)($subscription['endpoint'] ?? ''));
+    $keys = $subscription['keys'] ?? [];
+    $p256dh = trim((string)($keys['p256dh'] ?? ''));
+    $auth = trim((string)($keys['auth'] ?? ''));
+
+    if ($userId <= 0 || $endpoint === '' || $p256dh === '' || $auth === '') {
+        return false;
+    }
+
+    notif_ensure_device_schema();
+
+    try {
+        $pdo = notif_pdo();
+        $stmt = $pdo->prepare(
+            "INSERT INTO notification_devices (user_id, kind, endpoint, p256dh, auth, user_agent, created_at, last_used_at)
+             VALUES (:uid, 'webpush', :endpoint, :p256dh, :auth, :ua, NOW(), NOW())
+             ON DUPLICATE KEY UPDATE endpoint = VALUES(endpoint), p256dh = VALUES(p256dh), auth = VALUES(auth),
+                                     user_agent = VALUES(user_agent), last_used_at = NOW()"
+        );
+        $stmt->execute([
+            ':uid'      => $userId,
+            ':endpoint' => $endpoint,
+            ':p256dh'   => $p256dh,
+            ':auth'     => $auth,
+            ':ua'       => substr($userAgent, 0, 255),
+        ]);
+        return true;
+    } catch (Throwable $e) {
+        try {
+            error_log('notif_save_push_subscription failed: ' . $e->getMessage());
+        } catch (Throwable $_) {}
+        return false;
+    }
+}
+
 function notif_vapid_config(): array {
     return [
         'subject'    => defined('WEB_PUSH_VAPID_SUBJECT') ? trim((string)WEB_PUSH_VAPID_SUBJECT) : '',
