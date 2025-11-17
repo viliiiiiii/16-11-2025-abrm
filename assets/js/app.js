@@ -106,75 +106,70 @@ function summarizeUserAgent(agent = '') {
 
 function initNav() {
   const toggle = document.getElementById('navToggle');
-  const panel = document.getElementById('navPanel');
+  const sidebar = document.querySelector('[data-sidebar]');
+  const backdrop = document.getElementById('sidebarBackdrop');
   const body = document.body;
-  if (!toggle || !panel) return;
+  if (!toggle || !sidebar || !body) return;
 
-  const mq = window.matchMedia('(min-width: 980px)');
+  const mq = window.matchMedia('(min-width: 1025px)');
   const isDesktop = () => mq.matches;
 
-  const syncAria = () => {
-    if (isDesktop()) {
-      panel.classList.remove('open');
-      panel.removeAttribute('aria-hidden');
-      toggle.classList.remove('is-active');
-      toggle.setAttribute('aria-expanded', 'false');
-      body.classList.remove('nav-open');
-    } else {
-      panel.setAttribute('aria-hidden', panel.classList.contains('open') ? 'false' : 'true');
-    }
+  const close = () => {
+    body.classList.remove('sidebar-open');
+    sidebar.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
   };
 
   const open = () => {
-    panel.classList.add('open');
-    toggle.classList.add('is-active');
+    body.classList.add('sidebar-open');
+    sidebar.classList.add('is-open');
     toggle.setAttribute('aria-expanded', 'true');
-    if (!isDesktop()) {
-      panel.setAttribute('aria-hidden', 'false');
-      body.classList.add('nav-open');
+  };
+
+  const sync = () => {
+    if (isDesktop()) {
+      body.classList.remove('sidebar-open');
+      sidebar.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
     }
   };
 
-  const close = () => {
-    panel.classList.remove('open');
-    toggle.classList.remove('is-active');
-    toggle.setAttribute('aria-expanded', 'false');
-    if (!isDesktop()) {
-      panel.setAttribute('aria-hidden', 'true');
-    }
-    body.classList.remove('nav-open');
-  };
-
-  toggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (panel.classList.contains('open')) {
+  toggle.addEventListener('click', () => {
+    if (body.classList.contains('sidebar-open')) {
       close();
     } else {
       open();
     }
   });
 
+  if (backdrop) {
+    backdrop.addEventListener('click', close);
+  }
+
+  document.querySelectorAll('[data-sidebar-close]').forEach((btn) => {
+    btn.addEventListener('click', close);
+  });
+
   document.addEventListener('click', (event) => {
-    if (!panel.classList.contains('open')) return;
-    if (panel.contains(event.target) || toggle.contains(event.target)) return;
+    if (!body.classList.contains('sidebar-open')) return;
+    if (sidebar.contains(event.target) || toggle.contains(event.target)) return;
     close();
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && panel.classList.contains('open')) {
+    if (event.key === 'Escape') {
       close();
     }
   });
 
-  panel.addEventListener('click', (event) => {
+  sidebar.addEventListener('click', (event) => {
     if (isDesktop()) return;
     const link = event.target.closest('a');
     if (link) close();
   });
 
-  const handleMatchChange = (event) => {
-    if (event.matches) close();
-    syncAria();
+  const handleMatchChange = () => {
+    sync();
   };
 
   if (mq.addEventListener) {
@@ -183,7 +178,7 @@ function initNav() {
     mq.addListener(handleMatchChange);
   }
 
-  syncAria();
+  sync();
 }
 
 async function fetchRoomsForBuilding(buildingId) {
@@ -585,10 +580,15 @@ function initNotifications() {
     fetchPeek();
   };
 
-  const closePopover = () => {
+  const closePopover = (immediate = false) => {
     if (!popover) return;
     if (hidePopoverTimer) {
       clearTimeout(hidePopoverTimer);
+    }
+    if (typeof immediate === 'boolean' && immediate) {
+      popover.classList.remove('is-open');
+      popover.hidden = true;
+      return;
     }
     hidePopoverTimer = setTimeout(() => {
       popover.classList.remove('is-open');
@@ -620,15 +620,23 @@ function initNotifications() {
     if (bellTrigger) {
       bellTrigger.addEventListener('focus', openPopover);
       bellTrigger.addEventListener('blur', closePopover);
+      bellTrigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (popover.hidden) {
+          openPopover();
+        } else {
+          closePopover(true);
+        }
+      });
       bellTrigger.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-          closePopover();
+          closePopover(true);
         }
       });
     }
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !popover.hidden) {
-        closePopover();
+        closePopover(true);
       }
     });
   }
@@ -1356,5 +1364,7 @@ function initCommandPalette() {
 onReady(() => {
   initNav();
   initRooms();
+  initNotifications();
+  initPush();
   initCommandPalette();
 });

@@ -252,7 +252,7 @@ ob_start();
 
     <section class="section">
       <?php if ($taskCount === 0): ?>
-        <div class="empty-state">No tasks are linked to this room yet. Use the QR code to capture the first punch list items on site.</div>
+        <div class="empty-state">No tasks are linked to this room yet. Use the QR code to capture the first ABRM log items on site.</div>
       <?php else: ?>
         <?php foreach (['open', 'in_progress', 'done'] as $statusKey):
           $tasksInGroup = $grouped[$statusKey] ?? [];

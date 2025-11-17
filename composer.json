@@ -1,6 +1,6 @@
 {
-    "name": "punchlist/app",
-    "description": "Simple PHP punch list manager",
+    "name": "abrm/management",
+    "description": "ABRM Management — modern operations manager",
     "type": "project",
     "require": {
         "php": ">=8.2",

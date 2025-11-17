@@ -1,4 +1,4 @@
-// Theme toggle for Punchlist
+// Theme toggle for ABRM Management
 // - Saves selection to localStorage('pl-theme')
 // - Respects OS preference on first visit
 // - Adds data-theme="light|dark" on <html>

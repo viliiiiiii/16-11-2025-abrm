@@ -526,7 +526,7 @@ $transferPdfUrl = $movement['transfer_form_url'] ?? null;
         </form>
       <?php endif; ?>
     </div>
-    <footer>Powered by the Punchlist inventory module.</footer>
+    <footer>Powered by the ABRM Management inventory module.</footer>
   </div>
 
   <script>
