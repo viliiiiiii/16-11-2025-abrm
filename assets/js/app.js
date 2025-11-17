@@ -580,10 +580,15 @@ function initNotifications() {
     fetchPeek();
   };
 
-  const closePopover = () => {
+  const closePopover = (immediate = false) => {
     if (!popover) return;
     if (hidePopoverTimer) {
       clearTimeout(hidePopoverTimer);
+    }
+    if (typeof immediate === 'boolean' && immediate) {
+      popover.classList.remove('is-open');
+      popover.hidden = true;
+      return;
     }
     hidePopoverTimer = setTimeout(() => {
       popover.classList.remove('is-open');
@@ -615,15 +620,23 @@ function initNotifications() {
     if (bellTrigger) {
       bellTrigger.addEventListener('focus', openPopover);
       bellTrigger.addEventListener('blur', closePopover);
+      bellTrigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (popover.hidden) {
+          openPopover();
+        } else {
+          closePopover(true);
+        }
+      });
       bellTrigger.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-          closePopover();
+          closePopover(true);
         }
       });
     }
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !popover.hidden) {
-        closePopover();
+        closePopover(true);
       }
     });
   }
@@ -1351,5 +1364,7 @@ function initCommandPalette() {
 onReady(() => {
   initNav();
   initRooms();
+  initNotifications();
+  initPush();
   initCommandPalette();
 });
