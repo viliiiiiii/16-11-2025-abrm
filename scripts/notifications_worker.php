@@ -15,7 +15,7 @@ $url   = $argv[3] ?? '/';
 
 $pdo = notif_pdo();
 try {
-    $stmt = $pdo->query('SELECT DISTINCT user_id FROM push_subscriptions ORDER BY user_id ASC');
+    $stmt = $pdo->query('SELECT DISTINCT user_id FROM `' . notif_push_table() . '` ORDER BY user_id ASC');
     $rows = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 } catch (Throwable $e) {
     fwrite(STDERR, 'Failed to load subscribers: ' . $e->getMessage() . PHP_EOL);

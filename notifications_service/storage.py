@@ -25,7 +25,7 @@ class NotificationStore:
         cur = conn.cursor()
         cur.execute(
             """
-            CREATE TABLE IF NOT EXISTS push_subscriptions (
+            CREATE TABLE IF NOT EXISTS user_push_tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
                 endpoint TEXT NOT NULL UNIQUE,
@@ -65,7 +65,7 @@ class NotificationStore:
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO push_subscriptions (user_id, endpoint, keys_json, subscription_json, created_at, updated_at)
+            INSERT INTO user_push_tokens (user_id, endpoint, keys_json, subscription_json, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(endpoint) DO UPDATE SET
                 user_id=excluded.user_id,
@@ -80,7 +80,7 @@ class NotificationStore:
 
     def remove_subscription(self, endpoint: str) -> None:
         conn = self._get_conn()
-        conn.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+        conn.execute("DELETE FROM user_push_tokens WHERE endpoint = ?", (endpoint,))
         conn.commit()
         conn.close()
 
@@ -88,7 +88,7 @@ class NotificationStore:
         conn = self._get_conn()
         cur = conn.cursor()
         cur.execute(
-            "SELECT endpoint, subscription_json FROM push_subscriptions WHERE user_id = ?",
+            "SELECT endpoint, subscription_json FROM user_push_tokens WHERE user_id = ?",
             (user_id,),
         )
         rows = cur.fetchall()
